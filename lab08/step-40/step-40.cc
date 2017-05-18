@@ -25,6 +25,7 @@
 
 #include <deal.II/lac/generic_linear_algebra.h>
 
+#include <deal.II/grid/grid_out.h>
 
 namespace LA
 {
@@ -337,6 +338,8 @@ namespace Step40
                                   (triangulation.locally_owned_subdomain(), 4));
     std::ofstream output ((filename + ".vtu").c_str());
     data_out.write_vtu (output);
+    // std::ofstream output ((filename + ".svg").c_str());
+    // data_out.write_svg (output);
 
     if (Utilities::MPI::this_mpi_process(mpi_communicator) == 0)
       {
@@ -354,7 +357,16 @@ namespace Step40
                                       Utilities::int_to_string (cycle, 2) +
                                       ".pvtu").c_str());
         data_out.write_pvtu_record (master_output, filenames);
+        // data_out.write_psvg_record (master_output, filenames);
       }
+
+    GridOut go;
+    std::ofstream output_svg_grid ((filename + Utilities::int_to_string (Utilities::MPI::this_mpi_process(mpi_communicator),2) + ".svg").c_str());
+    go.write_svg(triangulation, output_svg_grid);
+
+
+
+
   }
 
 
@@ -378,12 +390,24 @@ namespace Step40
 
         setup_system ();
 
-        pcout << "   Number of active cells:       "
+        pcout <<   "all:   Number of active cells:       "
               << triangulation.n_global_active_cells()
               << std::endl
-              << "   Number of degrees of freedom: "
+              <<   "all:   Number of degrees of freedom: "
               << dof_handler.n_dofs()
               << std::endl;
+
+        std::cout
+              << Utilities::int_to_string (Utilities::MPI::this_mpi_process(mpi_communicator),3)
+              << ":   Number of loc owned cells:    "
+              << triangulation.n_cells()
+              << "\n"
+              << Utilities::int_to_string (Utilities::MPI::this_mpi_process(mpi_communicator),3)
+              << ":   Number of loc active cells:   "
+              << triangulation.n_active_cells()
+              << std::endl;
+
+
 
         assemble_system ();
         solve ();
@@ -391,7 +415,7 @@ namespace Step40
         if (Utilities::MPI::n_mpi_processes(mpi_communicator) <= 32)
           {
             TimerOutput::Scope t(computing_timer, "output");
-            output_results (cycle);
+            // output_results (cycle);
           }
 
         computing_timer.print_summary ();
